@@ -20,6 +20,8 @@ import { useApp } from '../context/AppContext';
 import { AudioButton } from './AudioButton';
 import { SpeechMicButton } from './SpeechMicButton';
 import { Exercise } from '../types';
+import { getWordAnnotation } from '../utils/pinyinMap';
+import { speakChinese } from '../utils/speech';
 
 export const LessonViewer: React.FC = () => {
   const { currentLessonId, setActiveView, startLesson, completeLesson, addXP, progress } = useApp();
@@ -475,42 +477,114 @@ export const LessonViewer: React.FC = () => {
           {/* Sentence Order Chips */}
           {currentExercise.type === 'sentence-order' && (
             <div className="space-y-4">
-              <div className="min-h-16 p-4 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 flex flex-wrap gap-2 items-center">
-                {orderedChips.length === 0 ? (
-                  <span className="text-xs text-slate-400 italic">
-                    Click the chips below to build the sentence in order...
+              {/* Spoken Assistance Banner */}
+              <div className="p-3 sm:p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2 text-amber-300">
+                  <Sparkles size={16} className="text-amber-400 shrink-0" />
+                  <span className="font-medium leading-relaxed">
+                    <strong className="text-amber-300 font-bold">Learning to talk?</strong> Tap any word chip below to hear its native sound! Each chip shows Pinyin & English so you don't need to read characters.
                   </span>
-                ) : (
-                  orderedChips.map((chip, i) => (
-                    <button
-                      key={i}
-                      onClick={() => handleChipClick(chip)}
-                      className="px-3.5 py-2 rounded-xl bg-red-600 text-white font-chinese font-bold text-base shadow-sm hover:bg-red-700 transition-all"
-                    >
-                      {chip}
-                    </button>
-                  ))
+                </div>
+                {orderedChips.length > 0 && (
+                  <button
+                    onClick={() => speakChinese(orderedChips.join(''))}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-red-600 to-amber-600 text-white hover:brightness-110 text-xs font-bold transition-all shrink-0 shadow-md active:scale-95 cursor-pointer"
+                    title="Listen to the sentence you built"
+                  >
+                    <Volume2 size={14} />
+                    <span className="hidden xs:inline">Hear Sentence</span>
+                  </button>
                 )}
               </div>
 
-              <div className="flex flex-wrap gap-2 pt-2">
-                {currentExercise.options?.map((chip, i) => {
-                  const isUsed = orderedChips.includes(chip);
-                  return (
-                    <button
-                      key={i}
-                      disabled={isUsed || isAnswerChecked}
-                      onClick={() => handleChipClick(chip)}
-                      className={`px-4 py-2.5 rounded-xl font-chinese font-bold text-base border transition-all ${
-                        isUsed
-                          ? 'opacity-30 bg-slate-200 border-slate-300 cursor-not-allowed'
-                          : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-red-500 shadow-sm'
-                      }`}
-                    >
-                      {chip}
-                    </button>
-                  );
-                })}
+              {/* Assembled Sentence Dropzone */}
+              <div className="min-h-20 p-3.5 sm:p-4 rounded-3xl border-2 border-dashed border-white/20 bg-slate-900/60 flex flex-wrap gap-2.5 items-center">
+                {orderedChips.length === 0 ? (
+                  <span className="text-xs text-slate-400 italic">
+                    Tap the word chips below to construct your spoken sentence...
+                  </span>
+                ) : (
+                  orderedChips.map((chip, i) => {
+                    const info = getWordAnnotation(chip);
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => {
+                          handleChipClick(chip);
+                          speakChinese(chip);
+                        }}
+                        className="group flex flex-col items-center px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-2xl bg-gradient-to-r from-red-600 to-amber-600 text-white shadow-md hover:brightness-110 active:scale-95 transition-all text-center cursor-pointer"
+                        title="Click to remove or hear again"
+                      >
+                        {info.pinyin && (
+                          <span className="text-[10px] sm:text-[11px] font-black text-amber-200 tracking-wide leading-tight">
+                            {info.pinyin}
+                          </span>
+                        )}
+                        <span className="font-chinese font-black text-lg sm:text-xl leading-tight">
+                          {chip}
+                        </span>
+                        {info.english && (
+                          <span className="text-[9px] sm:text-[10px] text-white/80 font-medium leading-tight">
+                            {info.english}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Available Selection Chips */}
+              <div className="space-y-1.5 pt-1">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                  Available Word Chips (Tap to add & hear):
+                </span>
+                <div className="flex flex-wrap gap-2.5 pt-1">
+                  {currentExercise.options?.map((chip, i) => {
+                    const isUsed = orderedChips.includes(chip);
+                    const info = getWordAnnotation(chip);
+                    return (
+                      <button
+                        key={i}
+                        disabled={isUsed || isAnswerChecked}
+                        onClick={() => {
+                          handleChipClick(chip);
+                          speakChinese(chip);
+                        }}
+                        className={`group relative flex flex-col items-center justify-center min-w-[76px] sm:min-w-[84px] p-2.5 sm:p-3 rounded-2xl border transition-all duration-150 ${
+                          isUsed
+                            ? 'opacity-20 bg-slate-900/50 border-slate-800 cursor-not-allowed scale-95'
+                            : 'bg-slate-900/90 border-white/[0.12] hover:border-amber-400/60 hover:bg-slate-800/90 hover:shadow-lg hover:shadow-amber-500/10 active:scale-95 cursor-pointer'
+                        }`}
+                      >
+                        {/* Pinyin */}
+                        {info.pinyin && (
+                          <span className="text-xs sm:text-sm font-black text-amber-400 tracking-wide leading-tight">
+                            {info.pinyin}
+                          </span>
+                        )}
+
+                        {/* Character */}
+                        <span className="text-xl sm:text-2xl font-chinese font-black text-slate-100 my-0.5 leading-tight">
+                          {chip}
+                        </span>
+
+                        {/* English Meaning */}
+                        {info.english && (
+                          <span className="text-[10px] sm:text-[11px] text-slate-400 font-medium text-center leading-tight">
+                            {info.english}
+                          </span>
+                        )}
+
+                        {/* Audio speaker indicator */}
+                        <span className="absolute top-1.5 right-1.5 text-slate-500 group-hover:text-amber-400 transition-colors opacity-70">
+                          <Volume2 size={11} />
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           )}
@@ -522,20 +596,48 @@ export const LessonViewer: React.FC = () => {
             <div className="space-y-3">
               {currentExercise.options?.map((opt, i) => {
                 const isSelected = selectedAnswer === opt;
+                const info = getWordAnnotation(opt);
                 return (
-                  <button
+                  <div
                     key={i}
-                    disabled={isAnswerChecked}
-                    onClick={() => setSelectedAnswer(opt)}
-                    className={`w-full text-left p-4 rounded-2xl border transition-all text-sm font-semibold flex items-center justify-between ${
+                    onClick={() => !isAnswerChecked && setSelectedAnswer(opt)}
+                    className={`w-full text-left p-3.5 sm:p-4 rounded-2xl border transition-all flex items-center justify-between gap-3 cursor-pointer ${
                       isSelected
-                        ? 'border-red-600 bg-red-50 text-red-900 dark:bg-red-950/50 dark:text-red-200 shadow-sm'
-                        : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:border-slate-300'
+                        ? 'border-red-500 bg-red-500/15 text-white shadow-sm ring-1 ring-red-500/30'
+                        : 'border-white/[0.08] bg-slate-900/70 text-slate-200 hover:border-white/20 hover:bg-slate-800/80'
                     }`}
                   >
-                    <span>{opt}</span>
-                    {isSelected && <Check size={18} className="text-red-600 dark:text-red-400" />}
-                  </button>
+                    <div className="flex-1 space-y-0.5">
+                      <div className="font-chinese font-bold text-base sm:text-lg text-slate-100">
+                        {opt}
+                      </div>
+                      {info.pinyin && info.pinyin !== opt && (
+                        <div className="text-xs font-semibold text-amber-400">
+                          {info.pinyin}
+                        </div>
+                      )}
+                      {info.english && info.english !== opt && (
+                        <div className="text-xs text-slate-400">
+                          {info.english}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          speakChinese(info.hanzi || opt);
+                        }}
+                        className="p-2 rounded-xl bg-white/[0.06] hover:bg-amber-500/20 text-slate-400 hover:text-amber-300 transition-colors"
+                        title="Listen to this option spoken aloud"
+                      >
+                        <Volume2 size={16} />
+                      </button>
+                      {isSelected && <Check size={18} className="text-red-400" />}
+                    </div>
+                  </div>
                 );
               })}
             </div>
