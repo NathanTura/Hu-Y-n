@@ -108,7 +108,7 @@ export const ListeningLab: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6 animate-fade-in">
+    <div className="max-w-4xl mx-auto px-3 sm:px-6 py-4 sm:py-8 space-y-4 sm:space-y-6 animate-fade-in pb-24 xl:pb-12 w-full max-w-full overflow-x-hidden">
       
       {/* Header */}
       <div>

@@ -46,43 +46,43 @@ export const Dashboard: React.FC = () => {
   const currentLevelLessons = LESSONS.filter(l => l.level === selectedLevel);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-8 animate-fade-in pb-24 xl:pb-12">
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-6 sm:space-y-8 animate-fade-in pb-24 xl:pb-12 w-full max-w-full overflow-x-hidden">
       
       {/* ReactBits Style Hero Banner with Ambient Glow & Floating Seals */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-red-600/95 via-rose-700/90 to-amber-600/95 text-white shadow-2xl p-6 sm:p-10 border border-white/10">
+      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-red-600/95 via-rose-700/90 to-amber-600/95 text-white shadow-2xl p-5 sm:p-8 lg:p-10 border border-white/10 w-full max-w-full">
         
         {/* Ambient Glow Orbs */}
-        <div className="absolute top-0 right-1/4 w-96 h-96 bg-amber-400/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-10 left-1/3 w-80 h-80 bg-red-500/30 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-1/4 w-72 sm:w-96 h-72 sm:h-96 bg-amber-400/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-10 left-1/3 w-64 sm:w-80 h-64 sm:h-80 bg-red-500/30 rounded-full blur-3xl pointer-events-none" />
 
         {/* Large Decorative Chinese Calligraphy Watermark */}
-        <div className="absolute -right-6 -bottom-8 select-none opacity-10 font-chinese text-8xl sm:text-9xl font-black pointer-events-none tracking-widest">
+        <div className="absolute -right-4 -bottom-6 select-none opacity-10 font-chinese text-7xl sm:text-9xl font-black pointer-events-none tracking-widest hidden xs:block">
           学汉语
         </div>
 
-        <div className="relative z-10 max-w-2xl space-y-4">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-black/25 backdrop-blur-md border border-white/15 text-amber-200 text-xs font-bold uppercase tracking-wider">
-            <Sparkles size={14} className="text-amber-300" />
+        <div className="relative z-10 max-w-2xl space-y-3 sm:space-y-4">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/25 backdrop-blur-md border border-white/15 text-amber-200 text-[11px] sm:text-xs font-bold uppercase tracking-wider">
+            <Sparkles size={13} className="text-amber-300" />
             <span>100% Free • Interactive Speech • Zero Paywalls</span>
           </div>
 
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight">
+          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight">
             Speak Mandarin Chinese Confidently.
           </h1>
 
-          <p className="text-white/90 text-sm sm:text-base leading-relaxed">
+          <p className="text-white/90 text-xs sm:text-base leading-relaxed">
             Prioritize speaking out loud, native listening comprehension, and conversational fluency with interactive Web Speech feedback, tone training, and spaced repetition.
           </p>
 
-          <div className="pt-2 flex flex-wrap items-center gap-3">
+          <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full">
             <button
               onClick={() => startLesson(nextLesson.id)}
-              className="group inline-flex items-center gap-2.5 px-6 py-3.5 rounded-2xl bg-white text-slate-950 font-extrabold text-sm shadow-xl hover:bg-amber-50 active:scale-95 transition-all"
+              className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-3 sm:py-3.5 rounded-2xl bg-white text-slate-950 font-extrabold text-xs sm:text-sm shadow-xl hover:bg-amber-50 active:scale-95 transition-all text-center"
             >
-              <div className="w-6 h-6 rounded-full bg-red-600 text-white flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Play size={13} className="fill-white translate-x-0.5" />
+              <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-red-600 text-white flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+                <Play size={11} className="fill-white translate-x-0.5" />
               </div>
-              <span>
+              <span className="truncate">
                 {progress.completedLessonIds.includes(nextLesson.id) 
                   ? 'Review Latest Lesson' 
                   : `Continue: ${nextLesson.title}`}
@@ -91,36 +91,36 @@ export const Dashboard: React.FC = () => {
 
             <button
               onClick={openDailyPractice}
-              className="inline-flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-black/30 hover:bg-black/40 text-white font-bold text-sm backdrop-blur-md border border-white/20 active:scale-95 transition-all"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-3 sm:py-3.5 rounded-2xl bg-black/30 hover:bg-black/40 text-white font-bold text-xs sm:text-sm backdrop-blur-md border border-white/20 active:scale-95 transition-all"
             >
-              <Sparkles size={16} className="text-amber-300" />
+              <Sparkles size={15} className="text-amber-300" />
               <span>Daily 10m Session</span>
             </button>
           </div>
         </div>
 
         {/* Hero Progress Metrics Pill Grid */}
-        <div className="mt-8 pt-6 border-t border-white/15 grid grid-cols-2 sm:grid-cols-4 gap-4 text-white/95">
-          <div className="p-3 rounded-2xl bg-black/20 backdrop-blur-sm border border-white/10">
-            <div className="text-2xl sm:text-3xl font-black flex items-center gap-1.5">
+        <div className="mt-6 sm:mt-8 pt-5 sm:pt-6 border-t border-white/15 grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4 text-white/95">
+          <div className="p-2.5 sm:p-3 rounded-2xl bg-black/20 backdrop-blur-sm border border-white/10">
+            <div className="text-xl sm:text-3xl font-black flex items-center gap-1">
               <span>{progress.streak}</span>
-              <span className="text-sm font-semibold opacity-80">Days</span>
+              <span className="text-xs font-semibold opacity-80">Days</span>
             </div>
-            <div className="text-xs text-amber-200 font-semibold mt-0.5">Daily Streak 🔥</div>
+            <div className="text-[11px] sm:text-xs text-amber-200 font-semibold mt-0.5">Daily Streak 🔥</div>
           </div>
-          <div className="p-3 rounded-2xl bg-black/20 backdrop-blur-sm border border-white/10">
-            <div className="text-2xl sm:text-3xl font-black">
-              {totalCompleted} <span className="text-sm font-semibold opacity-70">/ {LESSONS.length}</span>
+          <div className="p-2.5 sm:p-3 rounded-2xl bg-black/20 backdrop-blur-sm border border-white/10">
+            <div className="text-xl sm:text-3xl font-black">
+              {totalCompleted} <span className="text-xs font-semibold opacity-70">/ {LESSONS.length}</span>
             </div>
-            <div className="text-xs text-amber-200 font-semibold mt-0.5">Lessons Mastered ✅</div>
+            <div className="text-[11px] sm:text-xs text-amber-200 font-semibold mt-0.5">Lessons Mastered ✅</div>
           </div>
-          <div className="p-3 rounded-2xl bg-black/20 backdrop-blur-sm border border-white/10">
-            <div className="text-2xl sm:text-3xl font-black text-amber-300">{progress.xp}</div>
-            <div className="text-xs text-amber-200 font-semibold mt-0.5">Total XP Earned ⚡</div>
+          <div className="p-2.5 sm:p-3 rounded-2xl bg-black/20 backdrop-blur-sm border border-white/10">
+            <div className="text-xl sm:text-3xl font-black text-amber-300">{progress.xp}</div>
+            <div className="text-[11px] sm:text-xs text-amber-200 font-semibold mt-0.5">Total XP Earned ⚡</div>
           </div>
-          <div className="p-3 rounded-2xl bg-black/20 backdrop-blur-sm border border-white/10">
-            <div className="text-2xl sm:text-3xl font-black">{progressPercent}%</div>
-            <div className="text-xs text-amber-200 font-semibold mt-0.5">Course Progress 🚀</div>
+          <div className="p-2.5 sm:p-3 rounded-2xl bg-black/20 backdrop-blur-sm border border-white/10">
+            <div className="text-xl sm:text-3xl font-black">{progressPercent}%</div>
+            <div className="text-[11px] sm:text-xs text-amber-200 font-semibold mt-0.5">Course Progress 🚀</div>
           </div>
         </div>
       </div>

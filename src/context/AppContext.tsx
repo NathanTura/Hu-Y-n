@@ -56,7 +56,7 @@ const defaultProgress: UserProgress = {
     showPinyin: true,
     showEnglish: true,
     autoPlayAudio: true,
-    theme: 'light',
+    theme: 'dark', // Auto Dark Mode by default!
   }
 };
 
@@ -83,6 +83,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           parsed.todayXp = 0;
           parsed.lastActiveDate = todayStr;
         }
+        // Auto dark mode: if theme isn't explicitly overridden by user, ensure it defaults to dark
+        if (!parsed.settings) {
+          parsed.settings = defaultProgress.settings;
+        } else if (!parsed.settings.theme || !localStorage.getItem('huayin_theme_manual_override')) {
+          parsed.settings.theme = 'dark';
+        }
+
         // Merge missing vocab if updated
         if (!parsed.vocabSRS || Object.keys(parsed.vocabSRS).length === 0) {
           parsed.vocabSRS = defaultProgress.vocabSRS;
@@ -232,6 +239,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateSettings = (newSettings: Partial<UserProgress['settings']>) => {
+    if (newSettings.theme) {
+      try {
+        localStorage.setItem('huayin_theme_manual_override', 'true');
+      } catch (e) {
+        // ignore
+      }
+    }
     setProgress(prev => ({
       ...prev,
       settings: {

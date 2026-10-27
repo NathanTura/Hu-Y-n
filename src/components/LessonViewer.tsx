@@ -124,7 +124,7 @@ export const LessonViewer: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 animate-fade-in space-y-6">
+    <div className="max-w-4xl mx-auto px-3 sm:px-6 py-4 sm:py-8 animate-fade-in space-y-4 sm:space-y-6 pb-24 xl:pb-12 w-full max-w-full overflow-x-hidden">
       
       {/* Top Header & Back */}
       <div className="flex items-center justify-between">
