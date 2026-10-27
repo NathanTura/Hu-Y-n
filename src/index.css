@@ -4,26 +4,109 @@
 
 @layer base {
   body {
-    @apply bg-slate-50 text-slate-800 antialiased selection:bg-red-500 selection:text-white;
+    @apply bg-slate-950 text-slate-100 antialiased selection:bg-red-500 selection:text-white min-h-screen;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    background-color: #090d16;
   }
+}
+
+/* Ambient Background Grid Pattern (ReactBits style) */
+.bg-grid-pattern {
+  background-size: 32px 32px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+}
+
+.bg-dot-pattern {
+  background-image: radial-gradient(rgba(244, 63, 94, 0.15) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Glassmorphism & Modern ReactBits Cards */
+.glass-panel {
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-panel-hover {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.glass-panel-hover:hover {
+  background: rgba(30, 41, 59, 0.85);
+  border-color: rgba(239, 68, 68, 0.35);
+  box-shadow: 0 12px 32px -8px rgba(220, 38, 38, 0.15), 0 0 0 1px rgba(239, 68, 68, 0.2);
+  transform: translateY(-2px);
+}
+
+/* Floating Navigation Dock */
+.glass-dock {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+/* Glow effects */
+.glow-border {
+  position: relative;
+}
+.glow-border::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(90deg, #ef4444, #f59e0b, #ef4444);
+  border-radius: inherit;
+  z-index: -1;
+  opacity: 0.5;
+  filter: blur(4px);
+  transition: opacity 0.3s;
+}
+
+/* Shimmer animation */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-shimmer {
+  animation: shimmer 2.5s infinite;
+}
+
+/* Pulse beacon */
+@keyframes beacon {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+.beacon-red {
+  animation: beacon 2s infinite;
 }
 
 /* Tone styling highlights */
 .tone-1 {
-  @apply text-red-600 dark:text-red-400 font-semibold;
+  @apply text-red-400 font-semibold;
 }
 .tone-2 {
-  @apply text-amber-600 dark:text-amber-400 font-semibold;
+  @apply text-amber-400 font-semibold;
 }
 .tone-3 {
-  @apply text-emerald-600 dark:text-emerald-400 font-semibold;
+  @apply text-emerald-400 font-semibold;
 }
 .tone-4 {
-  @apply text-blue-600 dark:text-blue-400 font-semibold;
+  @apply text-blue-400 font-semibold;
 }
 .tone-5, .tone-neutral {
-  @apply text-slate-500 dark:text-slate-400 font-normal;
+  @apply text-slate-400 font-normal;
+}
+
+/* Mobile safe area support */
+.safe-bottom {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
 }
 
 /* Custom scrollbars */
@@ -35,9 +118,9 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.4);
+  background: rgba(148, 163, 184, 0.25);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.7);
+  background: rgba(148, 163, 184, 0.5);
 }
