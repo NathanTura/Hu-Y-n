@@ -30,11 +30,22 @@ export const Dashboard: React.FC = () => {
 
   const [selectedLevel, setSelectedLevel] = useState<number>(1);
 
-  // Find next uncompleted lesson
-  const nextLesson = LESSONS.find(l => !progress.completedLessonIds.includes(l.id)) || LESSONS[0];
+  // Find in-progress lesson or next uncompleted lesson
+  const inProgressLessonEntry = Object.values(progress.lessonProgress || {}).find(
+    p => !p.completed && (p.currentStep > 0 || p.exerciseIndex > 0)
+  );
+  const inProgressLesson = inProgressLessonEntry 
+    ? LESSONS.find(l => l.id === inProgressLessonEntry.lessonId) 
+    : undefined;
+
+  const nextLesson = inProgressLesson || LESSONS.find(l => !progress.completedLessonIds.includes(l.id)) || LESSONS[0];
+  const targetSavedProg = inProgressLesson ? inProgressLessonEntry : progress.lessonProgress?.[nextLesson.id];
+
   const dueWords = getDueWords(progress.vocabSRS);
   const totalCompleted = progress.completedLessonIds.length;
   const progressPercent = Math.round((totalCompleted / LESSONS.length) * 100);
+  const learnedWordsCount = progress.learnedWordIds?.length || 0;
+  const todayGoalPercent = Math.min(100, Math.round((progress.todayXp / Math.max(1, progress.dailyGoalXp)) * 100));
 
   const levelInfo = [
     { level: 1, title: 'Level 1: Absolute Beginner', subtitle: 'Tones, Pinyin, Greetings, Numbers & Basic Grammar', tag: 'A1 Foundations' },
@@ -83,9 +94,11 @@ export const Dashboard: React.FC = () => {
                 <Play size={11} className="fill-white translate-x-0.5" />
               </div>
               <span className="truncate">
-                {progress.completedLessonIds.includes(nextLesson.id) 
+                {inProgressLesson && targetSavedProg
+                  ? `Resume: Lesson ${inProgressLesson.order} (Step ${targetSavedProg.currentStep + 1}/7)`
+                  : progress.completedLessonIds.includes(nextLesson.id) 
                   ? 'Review Latest Lesson' 
-                  : `Continue: ${nextLesson.title}`}
+                  : `Start: Lesson ${nextLesson.order} — ${nextLesson.title}`}
               </span>
             </button>
 
@@ -108,19 +121,29 @@ export const Dashboard: React.FC = () => {
             </div>
             <div className="text-[11px] sm:text-xs text-amber-200 font-semibold mt-0.5">Daily Streak 🔥</div>
           </div>
+          <div 
+            onClick={() => setActiveView('vocab')}
+            className="p-2.5 sm:p-3 rounded-2xl bg-black/20 backdrop-blur-sm border border-white/10 cursor-pointer hover:bg-black/30 transition-colors"
+            title="Click to view all your learned words in the Vocabulary Notebook"
+          >
+            <div className="text-xl sm:text-3xl font-black text-amber-300 flex items-center gap-1">
+              <span>{learnedWordsCount}</span>
+              <span className="text-xs font-semibold opacity-70">Words</span>
+            </div>
+            <div className="text-[11px] sm:text-xs text-amber-200 font-semibold mt-0.5">Learned Vocabulary 📖</div>
+          </div>
+          <div className="p-2.5 sm:p-3 rounded-2xl bg-black/20 backdrop-blur-sm border border-white/10">
+            <div className="text-xl sm:text-3xl font-black text-emerald-300 flex items-center gap-1">
+              <span>{progress.todayXp}</span>
+              <span className="text-xs font-semibold opacity-70">/ {progress.dailyGoalXp} XP</span>
+            </div>
+            <div className="text-[11px] sm:text-xs text-amber-200 font-semibold mt-0.5">Today's Goal ({todayGoalPercent}%) ⚡</div>
+          </div>
           <div className="p-2.5 sm:p-3 rounded-2xl bg-black/20 backdrop-blur-sm border border-white/10">
             <div className="text-xl sm:text-3xl font-black">
-              {totalCompleted} <span className="text-xs font-semibold opacity-70">/ {LESSONS.length}</span>
+              {progressPercent}% <span className="text-xs font-semibold opacity-70">({totalCompleted}/{LESSONS.length})</span>
             </div>
-            <div className="text-[11px] sm:text-xs text-amber-200 font-semibold mt-0.5">Lessons Mastered ✅</div>
-          </div>
-          <div className="p-2.5 sm:p-3 rounded-2xl bg-black/20 backdrop-blur-sm border border-white/10">
-            <div className="text-xl sm:text-3xl font-black text-amber-300">{progress.xp}</div>
-            <div className="text-[11px] sm:text-xs text-amber-200 font-semibold mt-0.5">Total XP Earned ⚡</div>
-          </div>
-          <div className="p-2.5 sm:p-3 rounded-2xl bg-black/20 backdrop-blur-sm border border-white/10">
-            <div className="text-xl sm:text-3xl font-black">{progressPercent}%</div>
-            <div className="text-[11px] sm:text-xs text-amber-200 font-semibold mt-0.5">Course Progress 🚀</div>
+            <div className="text-[11px] sm:text-xs text-amber-200 font-semibold mt-0.5">Course Mastered 🚀</div>
           </div>
         </div>
       </div>
@@ -251,7 +274,9 @@ export const Dashboard: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
           {currentLevelLessons.map((lesson) => {
             const isCompleted = progress.completedLessonIds.includes(lesson.id);
-            const isCurrent = lesson.id === nextLesson.id;
+            const savedProg = progress.lessonProgress?.[lesson.id];
+            const isInProgress = !isCompleted && savedProg && (savedProg.currentStep > 0 || savedProg.exerciseIndex > 0);
+            const isCurrent = !isInProgress && lesson.id === nextLesson.id;
 
             return (
               <div
@@ -260,6 +285,8 @@ export const Dashboard: React.FC = () => {
                 className={`group relative p-6 rounded-3xl border transition-all duration-200 cursor-pointer flex flex-col justify-between ${
                   isCompleted
                     ? 'bg-slate-900/70 border-emerald-500/30 hover:border-emerald-500/60 hover:bg-slate-800/80'
+                    : isInProgress
+                    ? 'bg-gradient-to-b from-slate-900 via-slate-900 to-amber-950/30 border-amber-500/70 shadow-lg shadow-amber-500/10 ring-2 ring-amber-500/20'
                     : isCurrent
                     ? 'bg-gradient-to-b from-slate-900 via-slate-900 to-red-950/30 border-red-500/60 shadow-lg shadow-red-500/10 ring-2 ring-red-500/20'
                     : 'bg-slate-900/70 border-white/[0.08] hover:border-white/20 hover:bg-slate-800/80'
@@ -274,6 +301,10 @@ export const Dashboard: React.FC = () => {
                     {isCompleted ? (
                       <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-400 bg-emerald-500/15 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
                         <CheckCircle2 size={12} /> Completed
+                      </span>
+                    ) : isInProgress ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-400 bg-amber-500/15 px-2.5 py-0.5 rounded-full border border-amber-500/30 animate-pulse">
+                        <Clock size={12} /> Step {savedProg.currentStep + 1}/7
                       </span>
                     ) : isCurrent ? (
                       <span className="inline-flex items-center gap-1 text-[11px] font-bold text-red-400 bg-red-500/15 px-2.5 py-0.5 rounded-full border border-red-500/30 animate-pulse">
@@ -313,12 +344,14 @@ export const Dashboard: React.FC = () => {
                     className={`px-3.5 py-1.5 rounded-xl font-bold text-xs inline-flex items-center gap-1 transition-all ${
                       isCompleted
                         ? 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                        : isInProgress
+                        ? 'bg-gradient-to-r from-amber-600 to-rose-600 text-white shadow-md'
                         : isCurrent
                         ? 'bg-gradient-to-r from-red-600 to-amber-600 text-white shadow-md'
                         : 'bg-white/[0.08] text-slate-300 hover:bg-white/[0.12] hover:text-white'
                     }`}
                   >
-                    {isCompleted ? 'Review' : 'Start'}
+                    {isCompleted ? 'Review' : isInProgress ? 'Resume' : 'Start'}
                     <ChevronRight size={14} />
                   </button>
                 </div>

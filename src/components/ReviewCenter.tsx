@@ -20,10 +20,24 @@ export const ReviewCenter: React.FC = () => {
   const { progress, reviewWord, addXP, triggerCelebration } = useApp();
 
   const [activeReviewMode, setActiveReviewMode] = useState<'flashcards' | 'listening' | 'tone-id' | 'scramble'>('flashcards');
+  const [reviewSource, setReviewSource] = useState<'learned' | 'due' | 'all'>('learned');
+
+  const allVocabList = Object.values(progress.vocabSRS);
+  const learnedSet = new Set(progress.learnedWordIds || []);
+  const learnedWords = allVocabList.filter(w => w.learned || learnedSet.has(w.id));
+  const dueWords = getDueWords(progress.vocabSRS);
+
+  // Active pool of words to review based on user source selection
+  let wordsToReview: VocabWord[] = [];
+  if (reviewSource === 'learned') {
+    wordsToReview = learnedWords.length > 0 ? learnedWords : allVocabList.slice(0, 10);
+  } else if (reviewSource === 'due') {
+    wordsToReview = dueWords.length > 0 ? dueWords : (learnedWords.length > 0 ? learnedWords : allVocabList.slice(0, 10));
+  } else {
+    wordsToReview = allVocabList;
+  }
 
   // Flashcards state
-  const dueWords = getDueWords(progress.vocabSRS);
-  const wordsToReview = dueWords.length > 0 ? dueWords : Object.values(progress.vocabSRS).slice(0, 15);
   const [cardIndex, setCardIndex] = useState<number>(0);
   const [isFlipped, setIsFlipped] = useState<boolean>(false);
 
@@ -54,8 +68,7 @@ export const ReviewCenter: React.FC = () => {
   };
 
   // Generate 4 multiple choice options for listening quiz
-  const allVocabList = Object.values(progress.vocabSRS);
-  const currentListeningWord = allVocabList[listeningIndex % allVocabList.length];
+  const currentListeningWord = wordsToReview[listeningIndex % wordsToReview.length] || allVocabList[0];
   const listeningDistractors = allVocabList
     .filter(w => w.id !== currentListeningWord?.id)
     .sort(() => 0.5 - Math.random())
@@ -129,6 +142,61 @@ export const ReviewCenter: React.FC = () => {
             }`}
           >
             Tone ID
+          </button>
+        </div>
+      </div>
+
+      {/* Review Pool Selector: Learned Words vs Due vs All */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+        <div className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300">
+          <Layers size={16} className="text-red-500" />
+          <span>Active Review Deck:</span>
+        </div>
+
+        <div className="flex p-0.5 bg-slate-100 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold overflow-x-auto">
+          <button
+            onClick={() => {
+              setReviewSource('learned');
+              setCardIndex(0);
+              setListeningIndex(0);
+            }}
+            className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-all ${
+              reviewSource === 'learned'
+                ? 'bg-white dark:bg-slate-800 text-red-600 shadow-sm font-bold'
+                : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
+            }`}
+          >
+            🌟 Learned Words ({learnedWords.length})
+          </button>
+
+          <button
+            onClick={() => {
+              setReviewSource('due');
+              setCardIndex(0);
+              setListeningIndex(0);
+            }}
+            className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-all ${
+              reviewSource === 'due'
+                ? 'bg-white dark:bg-slate-800 text-red-600 shadow-sm font-bold'
+                : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
+            }`}
+          >
+            ⏰ SRS Due ({dueWords.length})
+          </button>
+
+          <button
+            onClick={() => {
+              setReviewSource('all');
+              setCardIndex(0);
+              setListeningIndex(0);
+            }}
+            className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-all ${
+              reviewSource === 'all'
+                ? 'bg-white dark:bg-slate-800 text-red-600 shadow-sm font-bold'
+                : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
+            }`}
+          >
+            📚 All Bank ({allVocabList.length})
           </button>
         </div>
       </div>

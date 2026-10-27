@@ -16,16 +16,23 @@ import { AudioButton } from './AudioButton';
 import { isWordDue } from '../utils/srs';
 
 export const VocabNotebook: React.FC = () => {
-  const { progress, toggleMasteredWord, setActiveView } = useApp();
+  const { progress, toggleMasteredWord, toggleLearnedWord, setActiveView } = useApp();
 
+  const [scope, setScope] = useState<'learned' | 'all'>('learned');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLevel, setSelectedLevel] = useState<number | 'all'>('all');
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'due' | 'learning' | 'mastered'>('all');
 
   const words = Object.values(progress.vocabSRS);
+  const learnedSet = new Set(progress.learnedWordIds || []);
+  const isWordLearned = (w: VocabWord) => !!(w.learned || learnedSet.has(w.id));
+  const learnedWords = words.filter(isWordLearned);
 
   // Filter words
   const filteredWords = words.filter(word => {
+    // Scope filter (learned vs all)
+    if (scope === 'learned' && !isWordLearned(word)) return false;
+
     // Search match
     const q = searchQuery.toLowerCase().trim();
     const matchesSearch = 
@@ -61,13 +68,13 @@ export const VocabNotebook: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400">
-            Vocabulary Bank & SRS
+            Vocabulary Bank & Spaced Repetition
           </span>
           <h1 className="text-3xl font-black text-slate-900 dark:text-white mt-1">
             Vocabulary Notebook
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Personal vocabulary dictionary with audio playback, example sentences, and spaced repetition tracking.
+            Track every word you've learned from lessons, monitor retention intervals, and launch smart SRS flashcard reviews.
           </p>
         </div>
 
@@ -77,15 +84,41 @@ export const VocabNotebook: React.FC = () => {
           className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-red-600 to-amber-500 text-white font-extrabold text-xs shadow-md hover:brightness-105 active:scale-95 transition-all self-start"
         >
           <Sparkles size={16} />
-          <span>Launch SRS Review ({dueCount} Due)</span>
+          <span>Review Learned Words ({learnedWords.length} Learned • {dueCount} Due)</span>
+        </button>
+      </div>
+
+      {/* Scope Switcher: Learned Words vs Full Bank */}
+      <div className="flex items-center gap-2 p-1 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 self-start w-fit">
+        <button
+          onClick={() => setScope('learned')}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black transition-all ${
+            scope === 'learned'
+              ? 'bg-gradient-to-r from-red-600 to-amber-600 text-white shadow-md'
+              : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
+          }`}
+        >
+          <Sparkles size={14} />
+          <span>My Learned Words ({learnedWords.length})</span>
+        </button>
+        <button
+          onClick={() => setScope('all')}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black transition-all ${
+            scope === 'all'
+              ? 'bg-gradient-to-r from-red-600 to-amber-600 text-white shadow-md'
+              : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
+          }`}
+        >
+          <Layers size={14} />
+          <span>All Academy Words ({words.length})</span>
         </button>
       </div>
 
       {/* Stats Summary Pills */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="p-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-          <div className="text-2xl font-black text-slate-900 dark:text-white">{words.length}</div>
-          <div className="text-xs text-slate-500">Total Words in Bank</div>
+          <div className="text-2xl font-black text-amber-500">{learnedWords.length} <span className="text-xs font-semibold text-slate-400">/ {words.length}</span></div>
+          <div className="text-xs text-slate-500">Learned Words</div>
         </div>
         <div className="p-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
           <div className="text-2xl font-black text-red-600 dark:text-red-400">{dueCount}</div>
@@ -97,9 +130,9 @@ export const VocabNotebook: React.FC = () => {
         </div>
         <div className="p-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
           <div className="text-2xl font-black text-amber-600 dark:text-amber-400">
-            {Math.round((masteredCount / Math.max(1, words.length)) * 100)}%
+            {Math.round((masteredCount / Math.max(1, learnedWords.length)) * 100)}%
           </div>
-          <div className="text-xs text-slate-500">Mastery Rate</div>
+          <div className="text-xs text-slate-500">Mastery of Learned</div>
         </div>
       </div>
 
@@ -160,13 +193,17 @@ export const VocabNotebook: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredWords.map((word) => {
           const isDue = isWordDue(word);
+          const isLearned = isWordLearned(word);
+
           return (
             <div
               key={word.id}
               className={`p-5 rounded-2xl border transition-all flex flex-col justify-between ${
                 word.mastered
                   ? 'bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/60'
-                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                  : isLearned
+                  ? 'bg-white dark:bg-slate-800 border-amber-500/30 shadow-sm'
+                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-slate-300 opacity-90'
               }`}
             >
               <div>
@@ -175,9 +212,15 @@ export const VocabNotebook: React.FC = () => {
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                       Level {word.level}
                     </span>
-                    <span className="text-[10px] font-medium text-slate-400">
-                      {word.category}
-                    </span>
+                    {isLearned ? (
+                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                        ✓ Learned
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-medium text-slate-400">
+                        {word.category}
+                      </span>
+                    )}
                   </div>
 
                   {/* SRS Box indicator */}
@@ -227,29 +270,44 @@ export const VocabNotebook: React.FC = () => {
                 )}
               </div>
 
-              {/* Card Footer: Mastered Toggle & Review Status */}
-              <div className="pt-3 mt-3 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between text-xs">
+              {/* Card Footer: Learned & Mastered Toggle */}
+              <div className="pt-3 mt-3 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between text-xs gap-2">
                 {isDue ? (
                   <span className="text-[11px] font-bold text-red-600 dark:text-red-400">
-                    ⏰ Due for Review
+                    ⏰ Due
                   </span>
                 ) : (
                   <span className="text-[11px] text-slate-400">
-                    Next in {word.intervalDays || 1}d
+                    Box {word.srsBox || 1} • {word.intervalDays || 1}d
                   </span>
                 )}
 
-                <button
-                  onClick={() => toggleMasteredWord(word.id)}
-                  className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition-all flex items-center gap-1 ${
-                    word.mastered
-                      ? 'bg-emerald-600 text-white'
-                      : 'bg-slate-100 text-slate-600 hover:bg-emerald-100 hover:text-emerald-700 dark:bg-slate-700 dark:text-slate-300'
-                  }`}
-                >
-                  <Check size={12} />
-                  <span>{word.mastered ? 'Mastered' : 'Mark Learned'}</span>
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => toggleLearnedWord(word.id)}
+                    className={`px-2.5 py-1 rounded-xl font-bold text-[11px] transition-all flex items-center gap-1 ${
+                      isLearned
+                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30'
+                        : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                    }`}
+                    title={isLearned ? 'Unmark from learned words' : 'Mark as learned'}
+                  >
+                    <Check size={12} />
+                    <span>{isLearned ? 'Learned' : '+ Learn'}</span>
+                  </button>
+
+                  <button
+                    onClick={() => toggleMasteredWord(word.id)}
+                    className={`px-2 py-1 rounded-xl font-bold text-[11px] transition-all flex items-center gap-1 ${
+                      word.mastered
+                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-200'
+                    }`}
+                    title="Mark as fully mastered (SRS Box 5)"
+                  >
+                    <span>{word.mastered ? '★ Mastered' : 'Master'}</span>
+                  </button>
+                </div>
               </div>
             </div>
           );

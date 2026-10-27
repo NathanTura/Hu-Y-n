@@ -18,6 +18,9 @@ export interface VocabWord {
   timesReviewed?: number;
   timesCorrect?: number;
   mastered?: boolean;
+  learned?: boolean;
+  learnedAt?: string;
+  lessonId?: string;
 }
 
 export type ExerciseType = 
@@ -119,13 +122,26 @@ export interface ConversationScenario {
   nodes: Record<string, DialogueNode>;
 }
 
+export interface SavedLessonProgress {
+  lessonId: string;
+  currentStep: number; // 0 to 6
+  exerciseIndex: number;
+  speakingPassed?: boolean;
+  updatedAt: string;
+  completed?: boolean;
+}
+
 export interface UserProgress {
   xp: number;
   streak: number;
+  streakDates: string[]; // YYYY-MM-DD dates with activity
   lastActiveDate: string; // YYYY-MM-DD
   dailyGoalXp: number;
   todayXp: number;
+  xpHistory: Record<string, number>; // date -> XP earned that day
   completedLessonIds: string[];
+  lessonProgress: Record<string, SavedLessonProgress>; // lessonId -> saved step
+  learnedWordIds: string[]; // IDs of words user has encountered & learned
   vocabSRS: Record<string, VocabWord>;
   unlockedLevel: number;
   badges: string[];

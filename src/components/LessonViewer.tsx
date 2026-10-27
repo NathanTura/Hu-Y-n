@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, 
   ArrowRight, 
@@ -24,10 +24,23 @@ import { getWordAnnotation } from '../utils/pinyinMap';
 import { speakChinese } from '../utils/speech';
 
 export const LessonViewer: React.FC = () => {
-  const { currentLessonId, setActiveView, startLesson, completeLesson, addXP, progress } = useApp();
+  const { 
+    currentLessonId, 
+    setActiveView, 
+    startLesson, 
+    completeLesson, 
+    addXP, 
+    progress, 
+    saveLessonStep, 
+    resetLessonStep, 
+    markWordsAsLearned 
+  } = useApp();
 
   const lesson = LESSONS.find(l => l.id === currentLessonId) || LESSONS[0];
   const nextLesson = LESSONS.find(l => l.order === lesson.order + 1);
+
+  // Check if there is saved checkpoint progress for this lesson
+  const savedProg = progress.lessonProgress?.[lesson.id];
 
   // Stepper state:
   // 0: Intro & Cultural Note
@@ -37,32 +50,81 @@ export const LessonViewer: React.FC = () => {
   // 4: Interactive Exercises
   // 5: Speaking Challenge
   // 6: Summary & Completion
-  const [currentStep, setCurrentStep] = useState<number>(0);
+  const [currentStep, setCurrentStep] = useState<number>(() => {
+    if (savedProg && !savedProg.completed && savedProg.currentStep > 0) {
+      return savedProg.currentStep;
+    }
+    return 0;
+  });
 
   // Interactive Exercises State
-  const [exerciseIndex, setExerciseIndex] = useState<number>(0);
+  const [exerciseIndex, setExerciseIndex] = useState<number>(() => {
+    if (savedProg && !savedProg.completed && savedProg.exerciseIndex > 0) {
+      return savedProg.exerciseIndex;
+    }
+    return 0;
+  });
+
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [orderedChips, setOrderedChips] = useState<string[]>([]);
   const [isAnswerChecked, setIsAnswerChecked] = useState<boolean>(false);
   const [isAnswerCorrect, setIsAnswerCorrect] = useState<boolean>(false);
 
   // Speaking challenge state
-  const [speakingPassed, setSpeakingPassed] = useState<boolean>(false);
+  const [speakingPassed, setSpeakingPassed] = useState<boolean>(() => {
+    return !!(savedProg?.speakingPassed);
+  });
+
+  // Resumed notification banner
+  const [hasResumedNotice, setHasResumedNotice] = useState<boolean>(() => {
+    return !!(savedProg && !savedProg.completed && (savedProg.currentStep > 0 || savedProg.exerciseIndex > 0));
+  });
+
+  // Whenever a lesson opens, automatically mark its target vocabulary as learned!
+  useEffect(() => {
+    if (lesson.vocabulary && lesson.vocabulary.length > 0) {
+      markWordsAsLearned(lesson.vocabulary, lesson.id);
+    }
+  }, [lesson.id]);
 
   const totalSteps = 7;
   const currentExercise: Exercise | undefined = lesson.exercises[exerciseIndex];
 
+  // Step helper that automatically persists position
+  const goToStep = (step: number) => {
+    setCurrentStep(step);
+    saveLessonStep(lesson.id, step, exerciseIndex, speakingPassed);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Restart lesson from step 0
+  const handleRestartLesson = () => {
+    resetLessonStep(lesson.id);
+    setCurrentStep(0);
+    setExerciseIndex(0);
+    setSelectedAnswer(null);
+    setOrderedChips([]);
+    setIsAnswerChecked(false);
+    setIsAnswerCorrect(false);
+    setSpeakingPassed(false);
+    setHasResumedNotice(false);
+  };
+
   // Navigation handlers
   const handleNextStep = () => {
     if (currentStep < totalSteps - 1) {
-      setCurrentStep(prev => prev + 1);
+      const next = currentStep + 1;
+      setCurrentStep(next);
+      saveLessonStep(lesson.id, next, exerciseIndex, speakingPassed);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
   const handlePrevStep = () => {
     if (currentStep > 0) {
-      setCurrentStep(prev => prev - 1);
+      const prev = currentStep - 1;
+      setCurrentStep(prev);
+      saveLessonStep(lesson.id, prev, exerciseIndex, speakingPassed);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -95,10 +157,13 @@ export const LessonViewer: React.FC = () => {
     setIsAnswerCorrect(false);
 
     if (exerciseIndex < lesson.exercises.length - 1) {
-      setExerciseIndex(prev => prev + 1);
+      const nextIdx = exerciseIndex + 1;
+      setExerciseIndex(nextIdx);
+      saveLessonStep(lesson.id, 4, nextIdx, speakingPassed);
     } else {
       // Completed all exercises, proceed to speaking challenge
       setCurrentStep(5);
+      saveLessonStep(lesson.id, 5, 0, speakingPassed);
     }
   };
 
@@ -120,6 +185,7 @@ export const LessonViewer: React.FC = () => {
       setOrderedChips([]);
       setIsAnswerChecked(false);
       setSpeakingPassed(false);
+      setHasResumedNotice(false);
     } else {
       setActiveView('dashboard');
     }
@@ -148,6 +214,26 @@ export const LessonViewer: React.FC = () => {
         </div>
       </div>
 
+      {/* Resumed Checkpoint Notification */}
+      {hasResumedNotice && (
+        <div className="flex items-center justify-between p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-semibold animate-fade-in shadow-sm">
+          <div className="flex items-center gap-2">
+            <Clock size={16} className="text-amber-400 shrink-0" />
+            <span>
+              Resumed checkpoint: Step {currentStep + 1} of 7 ({['Overview', 'Vocab Bank', 'Dialogue', 'Tones', 'Interactive Exercises', 'Speaking Challenge', 'Summary'][currentStep]}).
+            </span>
+          </div>
+          <button
+            onClick={handleRestartLesson}
+            className="px-2.5 py-1 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-[11px] font-bold flex items-center gap-1 transition-colors shrink-0 ml-2"
+            title="Restart lesson from Step 1"
+          >
+            <RotateCcw size={12} />
+            <span>Restart</span>
+          </button>
+        </div>
+      )}
+
       {/* Lesson Progress Bar */}
       <div className="w-full bg-slate-200 dark:bg-slate-700 h-2.5 rounded-full overflow-hidden">
         <div
@@ -156,15 +242,29 @@ export const LessonViewer: React.FC = () => {
         />
       </div>
 
-      {/* Step Indicator Tabs */}
-      <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-wider overflow-x-auto pb-1">
-        <span className={currentStep === 0 ? 'text-red-600 dark:text-red-400' : ''}>1. Overview</span>
-        <span className={currentStep === 1 ? 'text-red-600 dark:text-red-400' : ''}>2. Vocab</span>
-        <span className={currentStep === 2 ? 'text-red-600 dark:text-red-400' : ''}>3. Dialogue</span>
-        <span className={currentStep === 3 ? 'text-red-600 dark:text-red-400' : ''}>4. Tones</span>
-        <span className={currentStep === 4 ? 'text-red-600 dark:text-red-400' : ''}>5. Exercises</span>
-        <span className={currentStep === 5 ? 'text-red-600 dark:text-red-400' : ''}>6. Speaking</span>
-        <span className={currentStep === 6 ? 'text-red-600 dark:text-red-400' : ''}>7. Summary</span>
+      {/* Step Indicator Tabs (Interactive Quick-Jump) */}
+      <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-wider overflow-x-auto pb-1 gap-1">
+        {[
+          '1. Overview', 
+          '2. Vocab', 
+          '3. Dialogue', 
+          '4. Tones', 
+          '5. Exercises', 
+          '6. Speaking', 
+          '7. Summary'
+        ].map((tabLabel, idx) => (
+          <button
+            key={idx}
+            onClick={() => goToStep(idx)}
+            className={`px-2 py-1 rounded-lg transition-all shrink-0 whitespace-nowrap cursor-pointer ${
+              currentStep === idx 
+                ? 'text-red-600 dark:text-red-400 font-black bg-red-100/70 dark:bg-red-950/60' 
+                : 'hover:text-slate-700 dark:hover:text-slate-200'
+            }`}
+          >
+            {tabLabel}
+          </button>
+        ))}
       </div>
 
       {/* ==================================================== */}
@@ -676,10 +776,12 @@ export const LessonViewer: React.FC = () => {
             <button
               onClick={() => {
                 if (exerciseIndex > 0) {
-                  setExerciseIndex(prev => prev - 1);
+                  const prevIdx = exerciseIndex - 1;
+                  setExerciseIndex(prevIdx);
+                  saveLessonStep(lesson.id, 4, prevIdx, speakingPassed);
                   setIsAnswerChecked(false);
                 } else {
-                  setCurrentStep(3);
+                  goToStep(3);
                 }
               }}
               className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-semibold text-xs hover:bg-slate-100"
@@ -759,6 +861,7 @@ export const LessonViewer: React.FC = () => {
               targetText={lesson.speakingChallenge.targetHanzi}
               onSuccess={(score) => {
                 setSpeakingPassed(true);
+                saveLessonStep(lesson.id, 5, exerciseIndex, true);
                 addXP(20);
               }}
             />
@@ -766,13 +869,13 @@ export const LessonViewer: React.FC = () => {
 
           <div className="pt-4 flex items-center justify-between">
             <button
-              onClick={() => setCurrentStep(4)}
+              onClick={() => goToStep(4)}
               className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-semibold text-xs hover:bg-slate-100"
             >
               Previous
             </button>
             <button
-              onClick={() => setCurrentStep(6)}
+              onClick={() => goToStep(6)}
               className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-red-600 text-white font-bold text-sm hover:bg-red-700 shadow-md"
             >
               <span>Lesson Summary</span>
